@@ -1,0 +1,98 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+<title>Untitled Document</title>
+
+
+
+</head>
+
+<body>
+<!--
+<audio controls="true" preload="auto">
+	<source src="sounds/howdo.mp3" type="audio/mpeg" />
+    <source src="sounds/howdo.ogv" type="audio/ogg" />
+</audio>
+-->
+
+
+
+<p>Music
+<input data="music" type="button" value="Play" />
+<input data="music" type="button" value="Pause" />
+<input data="music" type="button" value="Stop" />
+</p>
+<p>Angry
+<input data="angry" type="button" value="Play" />
+<input data="angry" type="button" value="Pause" />
+<input data="angry" type="button" value="Stop" />
+</p>
+<p>Ambient
+<input data="ambient" type="button" value="Play" />
+<input data="ambient" type="button" value="Pause" />
+<input data="ambient" type="button" value="Stop" />
+</p>
+<p>Warp
+<input data="warp" type="button" value="Play" />
+<input data="warp" type="button" value="Pause" />
+<input data="warp" type="button" value="Stop" />
+</p>
+<input data="" type="button" value="Stop All" />
+
+<div id="audioEngineContainer"></div>
+<script src="js/AudioEngine.js" type="text/javascript"></script>
+<script src="js/Utilities.js" type="text/javascript"></script>
+<script src="js/lib/jquery-1.4.4.min.js" type="text/javascript"></script>
+<script>
+window.onload = function(){
+	var options = {
+		element:document.getElementById("audioEngineContainer")
+	};
+	var audioEngine = new AudioEngine(options);
+	
+	var preloadArray = [{
+		label:"music",	
+		mp3:"sounds/howdo.mp3",
+		ogv:"sounds/howdo.ogv"
+	},
+	{
+		label:"angry",	
+		mp3:"sounds/angry.mp3",
+		ogv:"sounds/angry.ogv"
+	},
+	{
+		label:"warp",	
+		mp3:"sounds/warp.mp3",
+		ogv:"sounds/warp.ogv"
+	},
+	{
+		label:"ambient",	
+		mp3:"sounds/ambient.mp3",
+		ogv:"sounds/ambient.ogv"
+	}];
+	audioEngine.preload(preloadArray);
+	
+	$("input").bind('click',function(){
+		var label = $(this).attr('data');
+		var action = this.value;
+		switch(action){
+			case "Play":
+				audioEngine.play(label);
+				break;
+			case "Pause":
+				audioEngine.pause(label);
+				break;
+			case "Stop":
+				audioEngine.stop(label);
+				break;
+			case "Stop All":
+				audioEngine.stopAll();
+				break;
+		}
+	});
+	
+};
+</script>
+</body>
+</html>
