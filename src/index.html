@@ -19,37 +19,61 @@
 
 
 <p>Music
+<input data="music" type="button" value="Create" />
 <input data="music" type="button" value="Play" />
 <input data="music" type="button" value="Pause" />
 <input data="music" type="button" value="Stop" />
 </p>
 <p>Angry
+<input data="angry" type="button" value="Create" />
 <input data="angry" type="button" value="Play" />
 <input data="angry" type="button" value="Pause" />
 <input data="angry" type="button" value="Stop" />
 </p>
 <p>Ambient
+<input data="ambient" type="button" value="Create" />
 <input data="ambient" type="button" value="Play" />
 <input data="ambient" type="button" value="Pause" />
 <input data="ambient" type="button" value="Stop" />
 </p>
 <p>Warp
+<input data="warp" type="button" value="Create" />
 <input data="warp" type="button" value="Play" />
 <input data="warp" type="button" value="Pause" />
 <input data="warp" type="button" value="Stop" />
 </p>
 <input data="" type="button" value="Stop All" />
+<p>Volume
+<select id="volume" data="volume">
+	<option value="0">0</option>
+    <option value="0.25">0.25</option>
+    <option value="0.5">0.5</option>
+    <option value="0.75">0.75</option>
+    <option value="1" selected="selected">1</option>
+</select>
+</p>
+
 
 <div id="audioEngineContainer"></div>
+<script src="js/Animator.js" type="text/javascript"></script>
+<script src="js/AudioPreloadItem.js" type="text/javascript"></script>
+<script src="js/AudioInstanceItem.js" type="text/javascript"></script>
 <script src="js/AudioEngine.js" type="text/javascript"></script>
 <script src="js/Utilities.js" type="text/javascript"></script>
 <script src="js/lib/jquery-1.4.4.min.js" type="text/javascript"></script>
 <script>
+function sendToFlash(){
+	alert('aosjd');
+};
 window.onload = function(){
 	var options = {
-		element:document.getElementById("audioEngineContainer")
+		element:document.getElementById("audioEngineContainer"),
+		swf:'flash/AudioEngineFlashPlayer.swf',
+		namespace:"window.APP.audioEngine"
 	};
 	var audioEngine = new AudioEngine(options);
+	window.APP = {};
+	window.APP.audioEngine = audioEngine;
 	
 	var preloadArray = [{
 		label:"music",	
@@ -71,12 +95,16 @@ window.onload = function(){
 		mp3:"sounds/ambient.mp3",
 		ogv:"sounds/ambient.ogv"
 	}];
+	/*
 	audioEngine.preload(preloadArray);
 	
 	$("input").bind('click',function(){
 		var label = $(this).attr('data');
 		var action = this.value;
 		switch(action){
+			case "Create":
+				audioEngine.create(label,false,true,true);
+				break;
 			case "Play":
 				audioEngine.play(label);
 				break;
@@ -92,6 +120,12 @@ window.onload = function(){
 		}
 	});
 	
+	$("#volume").bind('change',function(){
+		
+		console.log("change to:"+this.value);
+		audioEngine.setVolume(this.value);
+	});
+	*/
 };
 </script>
 </body>

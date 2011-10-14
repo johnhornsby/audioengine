@@ -1,7 +1,12 @@
 var AudioEngine = function(options){
 	
 	this._contianer = options.element;
+	this._swf = options.swf;
+	this._namespace = options.namespace;
 	this._isFlashFallBack = false;
+	this._isFlashReady = false;
+	this._flashElement = undefined;
+	this._flashReadyInterval = undefined;
 	this._audioFormat = "mp3";
 	
 	this._preloadContainer;
@@ -9,6 +14,7 @@ var AudioEngine = function(options){
 	this._preloadsObject = {};
 	this._instancesArray = [];
 	this._instanceIncrement = 0;
+	this._volume = 1;
 	
 	this._init();
 };
@@ -29,7 +35,9 @@ AudioEngine.prototype._init = function(){
 	this._build();
 };
 
-
+/**
+*@private
+*/
 AudioEngine.prototype._checkAudioSupport = function(){
 	this._audioFormat = "mp3";
 	this._isFlashFallBack = false;
@@ -51,13 +59,13 @@ AudioEngine.prototype._checkAudioSupport = function(){
 	}else{
 		this._isFlashFallBack = true;
 	}
-} 
+}  
 
 /**
 *@private
 */
 AudioEngine.prototype._build = function(){
-	if(this._isFlashFallBack === false){
+	if(false){
 		//Build Preload
 		this._preloadContainer = create("div");
 		attr(this._preloadContainer,"id","audioEnginePreloadContainer");
@@ -65,8 +73,64 @@ AudioEngine.prototype._build = function(){
 		this._instanceContainer = create("div");
 		attr(this._instanceContainer,"id","audioEngineInstanceContainer");
 		append(this._contianer,this._instanceContainer);
+	}else{
+		/*
+		var objectString = "";
+		objectString += '<object classid="clsid:d27cdb6e-ae6d-11cf-96b8-444553540000" codebase="http://download.macromedia.com/pub/shockwave/cabs/flash/swflash.cab#version=10,0,0,0" width="300" height="300" type="application/x-shockwave-flash  id="audioEngineFlashPlayer" data="'+this._swf+'" style="visibility:visible">'
+		objectString += '<param name="movie" value="'+this._swf+'">';
+		objectString += '<param name="flashvars" value="namespace='+this._namespace+'">';
+		objectString += '<embed src="'+this._swf+'" quality="high" FlashVars="namespace='+this._namespace+'" width="300" height="300" name="audioEngineFlashPlayer" align="middle" allowScriptAccess="sameDomain" allowFullScreen="false" type="application/x-shockwave-flash" pluginspage="http://www.adobe.com/go/getflashplayer" />';
+		objectString += '</object>';
+		*/
+		
+		var objectString = "";
+		objectString += '<object classid="clsid:d27cdb6e-ae6d-11cf-96b8-444553540000" width="300" height="300" id="audioEngineFlashPlayer">'
+		objectString += '<param name="movie" value="'+this._swf+'">';
+		objectString += '<param name="bgcolor" value="#333333">';
+		objectString += '<param name="flashvars" value="namespace='+this._namespace+'">';
+		objectString += '<embed src="'+this._swf+'" quality="high" FlashVars="namespace='+this._namespace+'" width="300" height="300" name="audioEngineFlashPlayer" allowScriptAccess="sameDomain" allowFullScreen="false" type="application/x-shockwave-flash" pluginspage="http://www.adobe.com/go/getflashplayer" />';
+		objectString += '</object>';
+		
+		this._contianer.innerHTML = objectString;
+		
+		this._flashReadyInterval = setInterval(this._F2JS_checkFlashIsReady.context(this),100);
+		
 	}
 };
+
+AudioEngine.prototype._F2JS_toJavaScript = function(str){
+	alert(str);
+};
+AudioEngine.prototype._F2JS_toActionScript = function(str){
+	if (navigator.appName.indexOf("Microsoft") != -1) {
+		 this._flashElement = window["audioEngineFlashPlayer"];
+	 } else {
+		 this._flashElement = document["audioEngineFlashPlayer"];
+	 }
+	this._flashElement.sendToActionScript(str);
+};
+AudioEngine.prototype._F2JS_isReady = function(){
+	return true;
+};
+AudioEngine.prototype._F2JS_checkFlashIsReady = function(){
+	var result = false;
+	try{
+		if (navigator.appName.indexOf("Microsoft") != -1) {
+			 this._flashElement = window["audioEngineFlashPlayer"];
+		 } else {
+			 this._flashElement = document["audioEngineFlashPlayer"];
+		 }
+		result = this._flashElement.isActionScriptReady();
+	}catch(e){}
+	if(result === true){
+		clearInterval(this._flashReadyInterval);	
+		this._isFlashReady = true;
+		console.log("_F2JS_checkFlashIsReady:"+this._isFlashReady);	
+	}else{
+		console.log("_F2JS_checkFlashIsReady:"+this._isFlashReady);	
+	}
+};
+
 
 /**
 *@private
@@ -80,7 +144,7 @@ AudioEngine.prototype._preloadComplete = function(e){
 /**
 *@private
 */
-AudioEngine.prototype._createAudioInstance = function(object){
+AudioEngine.prototype._createAudioInstance = function(object,autoDestroy,autoRewind,autoStop){
 	//create dom element
 	var element = create("audio");
 	attr(element,"src",object[this._audioFormat]);
@@ -89,17 +153,19 @@ AudioEngine.prototype._createAudioInstance = function(object){
 	append(this._instanceContainer,element);
 	addEvent(element,'ended',this._audioEnded.context(this));
 	
-	var instanceObject = {};
-	instanceObject.src = object[this._audioFormat];
-	instanceObject.label = object.label;
-	instanceObject.id = this._instanceIncrement;
-	instanceObject.element = element;
-	instanceObject.isPlaying = true;
+	var audioInstanceItem = new AudioInstanceItem();
+	audioInstanceItem.src = object[this._audioFormat];
+	audioInstanceItem.label = object.label;
+	audioInstanceItem.id = this._instanceIncrement;
+	audioInstanceItem.element = element;
+	audioInstanceItem.isPlaying = false;
+	audioInstanceItem.shouldAutoDestroy = (autoDestroy!=undefined)?autoDestroy:true;
+	audioInstanceItem.shouldAutoRewind = (autoRewind!=undefined)?autoRewind:false;
+	audioInstanceItem.shouldAutoStop = (autoStop!=undefined)?autoStop:true;
 	
-	this._instancesArray.push(instanceObject);
+	this._instancesArray.push(audioInstanceItem);
 	this._instanceIncrement++;
-	element.play();
-	return instanceObject.id;
+	return audioInstanceItem.id;
 };
 
 /**
@@ -108,42 +174,59 @@ AudioEngine.prototype._createAudioInstance = function(object){
 AudioEngine.prototype._audioEnded = function(e){
 	console.log('_audioEnded ' + attr(e.currentTarget,"data-label") + " " + attr(e.currentTarget,"data-instance") );
 	var l;
-	var element;
+	var element,audioInstanceItem;
 	for(var i = this._instancesArray.length-1; i>-1 ;i--){
-		if(this._instancesArray[i].element === e.currentTarget){
-			element = this._instancesArray.splice(i,1)[0].element;
-			remove(element);
+		audioInstanceItem = this._instancesArray[i];
+		if(audioInstanceItem.element === e.currentTarget){
+			if(audioInstanceItem.shouldAutoDestroy === true){
+				element = this._instancesArray.splice(i,1)[0].element;
+				remove(element);
+			}else{
+				if(audioInstanceItem.shouldAutoRewind === true){
+					audioInstanceItem.element.currentTime = 0;
+					if(audioInstanceItem.shouldAutoStop === true){
+						audioInstanceItem.isPlaying = false;
+						audioInstanceItem.element.pause();
+					}
+				}
+			}
 			return;
 		}
 	}
 };
 
+/**
+*@private
+*/
 AudioEngine.prototype._getAudioInstances = function(label,id){
 	var decrement = this._instancesArray.length;
-	var instanceObject;
+	var audioInstanceItem;
 	var results = [];
 	while(decrement--){
-		instanceObject = this._instancesArray[decrement];
+		audioInstanceItem = this._instancesArray[decrement];
 		if(id != undefined){
-			if(instanceObject.id === id){
-				results.push(instanceObject);
+			if(audioInstanceItem.id === id){
+				results.push(audioInstanceItem);
 				break;
 			}
 		}else{
-			if(instanceObject.label === label){
-				results.push(instanceObject);
+			if(audioInstanceItem.label === label){
+				results.push(audioInstanceItem);
 			}
 		}
 	}
 	return results;
 };
 
-AudioEngine.prototype._removeAudioInstance = function(instanceObject){
-	var index = this._instancesArray.indexOf(instanceObject);
+/**
+*@private
+*/
+AudioEngine.prototype._removeAudioInstance = function(audioInstanceItem){
+	var index = this._instancesArray.indexOf(audioInstanceItem);
 	var element;
 	if(index != -1){
 		this._instancesArray.splice(index,1);
-		remove(instanceObject.element);
+		remove(audioInstanceItem.element);
 	}
 }
 
@@ -152,6 +235,7 @@ AudioEngine.prototype._removeAudioInstance = function(instanceObject){
 //_______________________________________________________________________________________________
 
 /**
+* Preload array of sound objects
 * @public
 */
 AudioEngine.prototype.preload = function(a){
@@ -174,72 +258,108 @@ AudioEngine.prototype.preload = function(a){
 	}
 };
 
-AudioEngine.prototype.play = function(label,id){
-	var preloadedObject;
-	var playInstanceID;
-	var audioInstances;
-	var instanceObject;
-	if(id != undefined){
-		audioInstances = this._getAudioInstances(label,id);
-		if(audioInstances.length === 1){
-			instanceObject = audioInstances[0];
-			if(instanceObject.isPlaying === true){
-				instanceObject.element.play();
-				instanceObject.isPlaying = false;
-			}
+/**
+* Create sound and return instance id
+* @public 
+*/
+AudioEngine.prototype.create = function(label,autoDestroy,autoRewind,autoStop){
+	var preloadedObject = this._preloadsObject[label];
+	var playInstanceID = -1;
+	if(preloadedObject != undefined){
+		if(preloadedObject.isPreloaded == true){
+			playInstanceID = this._createAudioInstance(preloadedObject,autoDestroy,autoRewind,autoStop);
+		}else{
+			console.log("AudioEngine play() Warning "+label+" has not finished preloading");
 		}
 	}else{
-		preloadedObject = this._preloadsObject[label];
-		playInstanceID = -1;
-		if(preloadedObject != undefined){
-			if(preloadedObject.isPreloaded == true){
-				playInstanceID = this._createAudioInstance(preloadedObject);
-			}else{
-				console.log("AudioEngine play() Warning "+label+" has not finished preloading");
-			}
-		}else{
-			console.log("AudioEngine play() Error "+label+" has not started preloading");
-		}
+		console.log("AudioEngine play() Error "+label+" has not started preloading");
 	}
 	return playInstanceID;
 };
 
+/**
+* Play sound by label or id
+* @public 
+*/
+AudioEngine.prototype.play = function(label,id){
+	var audioInstances = this._getAudioInstances(label,id);
+	var decrement = audioInstances.length;
+	var audioInstanceItem;
+	while(decrement--){
+		audioInstanceItem = audioInstances[decrement];
+		if(audioInstanceItem.isPlaying === false){
+			audioInstanceItem.element.play();
+			audioInstanceItem.element.volume = audioInstanceItem.volume * this._volume;
+			audioInstanceItem.isPlaying = true;
+		}
+	}
+};
+
+/**
+* Pause sound by label or id
+* @public 
+*/
 AudioEngine.prototype.pause = function(label,id){
 	var audioInstances = this._getAudioInstances(label,id);
 	var decrement = audioInstances.length;
-	var instanceObject;
+	var audioInstanceItem;
 	while(decrement--){
-		instanceObject = audioInstances[decrement];
-		if(instanceObject.isPlaying === true){
-			instanceObject.element.pause();
-			instanceObject.isPlaying = false;
+		audioInstanceItem = audioInstances[decrement];
+		if(audioInstanceItem.isPlaying === true){
+			audioInstanceItem.element.pause();
+			audioInstanceItem.isPlaying = false;
 		}
 	}
 }
 
+/**
+* Stop sound by label or id
+* @public 
+*/
 AudioEngine.prototype.stop = function(label,id){
 	var audioInstances = this._getAudioInstances(label,id);
 	var decrement = audioInstances.length;
-	var instanceObject;
+	var audioInstanceItem;
 	while(decrement--){
-		instanceObject = audioInstances[decrement];
-		if(instanceObject.isPlaying === true){
-			instanceObject.element.pause();
-			instanceObject.isPlaying = false;
+		audioInstanceItem = audioInstances[decrement];
+		if(audioInstanceItem.isPlaying === true){
+			audioInstanceItem.element.pause();
+			audioInstanceItem.isPlaying = false;
 		}
-		this._removeAudioInstance(instanceObject);
+		this._removeAudioInstance(audioInstanceItem);
 	}
 }
 
+/**
+* Stop all sounds
+* @public 
+*/
 AudioEngine.prototype.stopAll = function(){
 	var decrement = this._instancesArray.length;
-	var instanceObject;
+	var audioInstanceItem;
 	while(decrement--){
-		instanceObject = this._instancesArray[decrement];
-		if(instanceObject.isPlaying === true){
-			instanceObject.element.pause();
-			instanceObject.isPlaying = false;
+		audioInstanceItem = this._instancesArray[decrement];
+		if(audioInstanceItem.isPlaying === true){
+			audioInstanceItem.element.pause();
+			audioInstanceItem.isPlaying = false;
 		}
-		this._removeAudioInstance(instanceObject);
+		this._removeAudioInstance(audioInstanceItem);
 	}
 }
+
+/**
+* Set global volume
+* @public 
+*/
+AudioEngine.prototype.setVolume = function(volume){
+	var decrement = this._instancesArray.length;
+	var audioInstanceItem;
+	this._volume = volume;
+	while(decrement--){
+		audioInstanceItem = this._instancesArray[decrement];
+		if(audioInstanceItem.isPlaying === true){
+			audioInstanceItem.element.volume = audioInstanceItem.volume * this._volume;
+		}
+	}
+}
+
