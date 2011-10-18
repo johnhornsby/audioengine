@@ -32,6 +32,10 @@ var AudioEngine = function(options){
 AudioEngine.prototype._init = function(){
 	//check if we need flash fallback
 	this._checkAudioSupport();
+	
+	//TEMP FLASH TESTING
+	this._isFlashFallBack = true;
+	
 	this._build();
 };
 
@@ -65,7 +69,7 @@ AudioEngine.prototype._checkAudioSupport = function(){
 *@private
 */
 AudioEngine.prototype._build = function(){
-	if(false){
+	if(this._isFlashFallBack === false){
 		//Build Preload
 		this._preloadContainer = create("div");
 		attr(this._preloadContainer,"id","audioEnginePreloadContainer");
@@ -73,16 +77,7 @@ AudioEngine.prototype._build = function(){
 		this._instanceContainer = create("div");
 		attr(this._instanceContainer,"id","audioEngineInstanceContainer");
 		append(this._contianer,this._instanceContainer);
-	}else{
-		/*
-		var objectString = "";
-		objectString += '<object classid="clsid:d27cdb6e-ae6d-11cf-96b8-444553540000" codebase="http://download.macromedia.com/pub/shockwave/cabs/flash/swflash.cab#version=10,0,0,0" width="300" height="300" type="application/x-shockwave-flash  id="audioEngineFlashPlayer" data="'+this._swf+'" style="visibility:visible">'
-		objectString += '<param name="movie" value="'+this._swf+'">';
-		objectString += '<param name="flashvars" value="namespace='+this._namespace+'">';
-		objectString += '<embed src="'+this._swf+'" quality="high" FlashVars="namespace='+this._namespace+'" width="300" height="300" name="audioEngineFlashPlayer" align="middle" allowScriptAccess="sameDomain" allowFullScreen="false" type="application/x-shockwave-flash" pluginspage="http://www.adobe.com/go/getflashplayer" />';
-		objectString += '</object>';
-		*/
-		
+	}else{		
 		var objectString = "";
 		objectString += '<object classid="clsid:d27cdb6e-ae6d-11cf-96b8-444553540000" width="300" height="300" id="audioEngineFlashPlayer">'
 		objectString += '<param name="movie" value="'+this._swf+'">';
@@ -93,26 +88,25 @@ AudioEngine.prototype._build = function(){
 		
 		this._contianer.innerHTML = objectString;
 		
-		this._flashReadyInterval = setInterval(this._F2JS_checkFlashIsReady.context(this),100);
+		this._flashReadyInterval = setInterval(this._FInterface_checkFlashIsReady.context(this),100);
 		
 	}
 };
 
-AudioEngine.prototype._F2JS_toJavaScript = function(str){
-	alert(str);
-};
-AudioEngine.prototype._F2JS_toActionScript = function(str){
-	if (navigator.appName.indexOf("Microsoft") != -1) {
-		 this._flashElement = window["audioEngineFlashPlayer"];
-	 } else {
-		 this._flashElement = document["audioEngineFlashPlayer"];
-	 }
-	this._flashElement.sendToActionScript(str);
+AudioEngine.prototype._F2JS_messageToJavaScript = function(str){
+	console.log(str);
 };
 AudioEngine.prototype._F2JS_isReady = function(){
+	var self = this;
+	setTimeout(function(){
+		if(self.onReady != undefined){
+			self.onReady();
+		}
+	},100);
 	return true;
 };
-AudioEngine.prototype._F2JS_checkFlashIsReady = function(){
+
+AudioEngine.prototype._FInterface_checkFlashIsReady = function(){
 	var result = false;
 	try{
 		if (navigator.appName.indexOf("Microsoft") != -1) {
@@ -120,7 +114,7 @@ AudioEngine.prototype._F2JS_checkFlashIsReady = function(){
 		 } else {
 			 this._flashElement = document["audioEngineFlashPlayer"];
 		 }
-		result = this._flashElement.isActionScriptReady();
+		result = this._flashElement._JS2F_isFlashReady();
 	}catch(e){}
 	if(result === true){
 		clearInterval(this._flashReadyInterval);	
@@ -129,7 +123,40 @@ AudioEngine.prototype._F2JS_checkFlashIsReady = function(){
 	}else{
 		console.log("_F2JS_checkFlashIsReady:"+this._isFlashReady);	
 	}
+}
+
+AudioEngine.prototype._FInterface_preload = function(preloadObjects){
+	this._flashElement._JS2F_preload(preloadObjects);
 };
+
+AudioEngine.prototype._FInterface_create = function(label,autoDestroy,autoRewind,autoStop){
+	return this._flashElement._JS2F_create(label,autoDestroy,autoRewind,autoStop);
+};
+
+AudioEngine.prototype._FInterface_play = function(label,id){
+	this._flashElement._JS2F_play(label,id);
+};
+
+AudioEngine.prototype._FInterface_pause = function(label,id){
+	this._flashElement._JS2F_pause(label,id);
+};
+
+AudioEngine.prototype._FInterface_stop = function(label,id){
+	this._flashElement._JS2F_stop(label,id);
+};
+
+AudioEngine.prototype._FInterface_stopAll = function(){
+	this._flashElement._JS2F_stopAll();
+};
+
+AudioEngine.prototype._FInterface_setVolume = function(volume){
+	this._flashElement._JS2F_setVolume(volume);
+};
+
+
+
+
+
 
 
 /**
@@ -239,21 +266,25 @@ AudioEngine.prototype._removeAudioInstance = function(audioInstanceItem){
 * @public
 */
 AudioEngine.prototype.preload = function(a){
-	var l;
-	var label;
-	for(var i=0,l = a.length; i<l; i++){
-		label = a[i].label;
-		if(this._preloadsObject[label] == undefined){
-			
-			this._preloadsObject[label] = a[i];
-			a[i].preloadElement = create("audio");
-			a[i].isPreloaded = false;
-			attr(a[i].preloadElement,"src",a[i][this._audioFormat]);
-			attr(a[i].preloadElement,"data-label",a[i].label);
-			append(this._preloadContainer,a[i].preloadElement);
-			addEvent(a[i].preloadElement,'canplaythrough',this._preloadComplete.context(this));
-			a[i].preloadElement.play()
-			a[i].preloadElement.pause();
+	if(this._isFlashFallBack === true){
+		this._FInterface_preload(a);
+	}else{
+		var l;
+		var label;
+		for(var i=0,l = a.length; i<l; i++){
+			label = a[i].label;
+			if(this._preloadsObject[label] == undefined){
+				
+				this._preloadsObject[label] = a[i];
+				a[i].preloadElement = create("audio");
+				a[i].isPreloaded = false;
+				attr(a[i].preloadElement,"src",a[i][this._audioFormat]);
+				attr(a[i].preloadElement,"data-label",a[i].label);
+				append(this._preloadContainer,a[i].preloadElement);
+				addEvent(a[i].preloadElement,'canplaythrough',this._preloadComplete.context(this));
+				a[i].preloadElement.play()
+				a[i].preloadElement.pause();
+			}
 		}
 	}
 };
@@ -263,16 +294,21 @@ AudioEngine.prototype.preload = function(a){
 * @public 
 */
 AudioEngine.prototype.create = function(label,autoDestroy,autoRewind,autoStop){
-	var preloadedObject = this._preloadsObject[label];
 	var playInstanceID = -1;
-	if(preloadedObject != undefined){
-		if(preloadedObject.isPreloaded == true){
-			playInstanceID = this._createAudioInstance(preloadedObject,autoDestroy,autoRewind,autoStop);
-		}else{
-			console.log("AudioEngine play() Warning "+label+" has not finished preloading");
-		}
+	if(this._isFlashFallBack === true){
+		playInstanceID = this._FInterface_create(label,autoDestroy,autoRewind,autoStop);
 	}else{
-		console.log("AudioEngine play() Error "+label+" has not started preloading");
+		var preloadedObject = this._preloadsObject[label];
+		
+		if(preloadedObject != undefined){
+			if(preloadedObject.isPreloaded == true){
+				playInstanceID = this._createAudioInstance(preloadedObject,autoDestroy,autoRewind,autoStop);
+			}else{
+				console.log("AudioEngine play() Warning "+label+" has not finished preloading");
+			}
+		}else{
+			console.log("AudioEngine play() Error "+label+" has not started preloading");
+		}
 	}
 	return playInstanceID;
 };
@@ -282,15 +318,19 @@ AudioEngine.prototype.create = function(label,autoDestroy,autoRewind,autoStop){
 * @public 
 */
 AudioEngine.prototype.play = function(label,id){
-	var audioInstances = this._getAudioInstances(label,id);
-	var decrement = audioInstances.length;
-	var audioInstanceItem;
-	while(decrement--){
-		audioInstanceItem = audioInstances[decrement];
-		if(audioInstanceItem.isPlaying === false){
-			audioInstanceItem.element.play();
-			audioInstanceItem.element.volume = audioInstanceItem.volume * this._volume;
-			audioInstanceItem.isPlaying = true;
+	if(this._isFlashFallBack === true){
+		this._FInterface_play(label,id);
+	}else{
+		var audioInstances = this._getAudioInstances(label,id);
+		var decrement = audioInstances.length;
+		var audioInstanceItem;
+		while(decrement--){
+			audioInstanceItem = audioInstances[decrement];
+			if(audioInstanceItem.isPlaying === false){
+				audioInstanceItem.element.play();
+				audioInstanceItem.element.volume = audioInstanceItem.volume * this._volume;
+				audioInstanceItem.isPlaying = true;
+			}
 		}
 	}
 };
@@ -300,14 +340,18 @@ AudioEngine.prototype.play = function(label,id){
 * @public 
 */
 AudioEngine.prototype.pause = function(label,id){
-	var audioInstances = this._getAudioInstances(label,id);
-	var decrement = audioInstances.length;
-	var audioInstanceItem;
-	while(decrement--){
-		audioInstanceItem = audioInstances[decrement];
-		if(audioInstanceItem.isPlaying === true){
-			audioInstanceItem.element.pause();
-			audioInstanceItem.isPlaying = false;
+	if(this._isFlashFallBack === true){
+		this._FInterface_pause(label,id);
+	}else{
+		var audioInstances = this._getAudioInstances(label,id);
+		var decrement = audioInstances.length;
+		var audioInstanceItem;
+		while(decrement--){
+			audioInstanceItem = audioInstances[decrement];
+			if(audioInstanceItem.isPlaying === true){
+				audioInstanceItem.element.pause();
+				audioInstanceItem.isPlaying = false;
+			}
 		}
 	}
 }
@@ -317,16 +361,20 @@ AudioEngine.prototype.pause = function(label,id){
 * @public 
 */
 AudioEngine.prototype.stop = function(label,id){
-	var audioInstances = this._getAudioInstances(label,id);
-	var decrement = audioInstances.length;
-	var audioInstanceItem;
-	while(decrement--){
-		audioInstanceItem = audioInstances[decrement];
-		if(audioInstanceItem.isPlaying === true){
-			audioInstanceItem.element.pause();
-			audioInstanceItem.isPlaying = false;
+	if(this._isFlashFallBack === true){
+		this._FInterface_stop(label,id);
+	}else{
+		var audioInstances = this._getAudioInstances(label,id);
+		var decrement = audioInstances.length;
+		var audioInstanceItem;
+		while(decrement--){
+			audioInstanceItem = audioInstances[decrement];
+			if(audioInstanceItem.isPlaying === true){
+				audioInstanceItem.element.pause();
+				audioInstanceItem.isPlaying = false;
+			}
+			this._removeAudioInstance(audioInstanceItem);
 		}
-		this._removeAudioInstance(audioInstanceItem);
 	}
 }
 
@@ -335,15 +383,19 @@ AudioEngine.prototype.stop = function(label,id){
 * @public 
 */
 AudioEngine.prototype.stopAll = function(){
-	var decrement = this._instancesArray.length;
-	var audioInstanceItem;
-	while(decrement--){
-		audioInstanceItem = this._instancesArray[decrement];
-		if(audioInstanceItem.isPlaying === true){
-			audioInstanceItem.element.pause();
-			audioInstanceItem.isPlaying = false;
+	if(this._isFlashFallBack === true){
+		this._FInterface_stopAll();
+	}else{
+		var decrement = this._instancesArray.length;
+		var audioInstanceItem;
+		while(decrement--){
+			audioInstanceItem = this._instancesArray[decrement];
+			if(audioInstanceItem.isPlaying === true){
+				audioInstanceItem.element.pause();
+				audioInstanceItem.isPlaying = false;
+			}
+			this._removeAudioInstance(audioInstanceItem);
 		}
-		this._removeAudioInstance(audioInstanceItem);
 	}
 }
 
@@ -352,13 +404,17 @@ AudioEngine.prototype.stopAll = function(){
 * @public 
 */
 AudioEngine.prototype.setVolume = function(volume){
-	var decrement = this._instancesArray.length;
-	var audioInstanceItem;
-	this._volume = volume;
-	while(decrement--){
-		audioInstanceItem = this._instancesArray[decrement];
-		if(audioInstanceItem.isPlaying === true){
-			audioInstanceItem.element.volume = audioInstanceItem.volume * this._volume;
+	if(this._isFlashFallBack === true){
+		this._FInterface_setVolume(volume);
+	}else{
+		var decrement = this._instancesArray.length;
+		var audioInstanceItem;
+		this._volume = volume;
+		while(decrement--){
+			audioInstanceItem = this._instancesArray[decrement];
+			if(audioInstanceItem.isPlaying === true){
+				audioInstanceItem.element.volume = audioInstanceItem.volume * this._volume;
+			}
 		}
 	}
 }

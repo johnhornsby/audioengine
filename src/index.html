@@ -9,15 +9,6 @@
 </head>
 
 <body>
-<!--
-<audio controls="true" preload="auto">
-	<source src="sounds/howdo.mp3" type="audio/mpeg" />
-    <source src="sounds/howdo.ogv" type="audio/ogg" />
-</audio>
--->
-
-
-
 <p>Music
 <input data="music" type="button" value="Create" />
 <input data="music" type="button" value="Play" />
@@ -95,8 +86,11 @@ window.onload = function(){
 		mp3:"sounds/ambient.mp3",
 		ogv:"sounds/ambient.ogv"
 	}];
-	/*
-	audioEngine.preload(preloadArray);
+	
+	audioEngine.onReady = function(){
+		console.log("Preload");
+		audioEngine.preload(preloadArray);
+	}
 	
 	$("input").bind('click',function(){
 		var label = $(this).attr('data');
@@ -125,7 +119,7 @@ window.onload = function(){
 		console.log("change to:"+this.value);
 		audioEngine.setVolume(this.value);
 	});
-	*/
+	
 };
 </script>
 </body>
