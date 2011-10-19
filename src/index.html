@@ -57,14 +57,6 @@ function sendToFlash(){
 	alert('aosjd');
 };
 window.onload = function(){
-	var options = {
-		element:document.getElementById("audioEngineContainer"),
-		swf:'flash/AudioEngineFlashPlayer.swf',
-		namespace:"window.APP.audioEngine"
-	};
-	var audioEngine = new AudioEngine(options);
-	window.APP = {};
-	window.APP.audioEngine = audioEngine;
 	
 	var preloadArray = [{
 		label:"music",	
@@ -87,17 +79,37 @@ window.onload = function(){
 		ogv:"sounds/ambient.ogv"
 	}];
 	
-	audioEngine.onReady = function(){
-		console.log("Preload");
-		audioEngine.preload(preloadArray);
-	}
+	
+	
+	
+	var audioEngine = new AudioEngine({
+		element:document.getElementById("audioEngineContainer"),
+		swf:'flash/AudioEngineFlashPlayer.swf',
+		namespace:"window.APP.audioEngine",
+		onReady:function(){
+			this.preload(preloadArray);
+		},
+		onPreloadComplete:function(){
+			
+		}
+	});
+	
+	
+	
+	
+	window.APP = window.APP || {};
+	window.APP.audioEngine = audioEngine;
+	
 	
 	$("input").bind('click',function(){
 		var label = $(this).attr('data');
 		var action = this.value;
 		switch(action){
 			case "Create":
-				audioEngine.create(label,false,true,true);
+				var autoDestroy = false;
+				var autoRewind = true;
+				var autoStop = false;
+				audioEngine.create(label,autoDestroy,autoRewind,autoStop);
 				break;
 			case "Play":
 				audioEngine.play(label);

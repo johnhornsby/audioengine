@@ -1,0 +1,1 @@
+﻿package  {		public class AudioPreloadItem {		public var label:String;		public var mp3:String;		public function AudioPreloadItem($label:String = "", $mp3:String = "") {			// constructor code			label = $label;			mp3 = $mp3;		}	}}

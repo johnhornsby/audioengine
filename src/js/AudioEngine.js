@@ -3,8 +3,10 @@ var AudioEngine = function(options){
 	this._contianer = options.element;
 	this._swf = options.swf;
 	this._namespace = options.namespace;
+	this._onReady = options.onReady;
 	this._isFlashFallBack = false;
 	this._isFlashReady = false;
+	this._isJavaScriptReady = false;
 	this._flashElement = undefined;
 	this._flashReadyInterval = undefined;
 	this._audioFormat = "mp3";
@@ -34,7 +36,7 @@ AudioEngine.prototype._init = function(){
 	this._checkAudioSupport();
 	
 	//TEMP FLASH TESTING
-	this._isFlashFallBack = true;
+	//this._isFlashFallBack = true;
 	
 	this._build();
 };
@@ -77,6 +79,12 @@ AudioEngine.prototype._build = function(){
 		this._instanceContainer = create("div");
 		attr(this._instanceContainer,"id","audioEngineInstanceContainer");
 		append(this._contianer,this._instanceContainer);
+		var self = this;
+		setTimeout(function(){
+			if(self.onReady != undefined){
+				self.onReady.apply(this);
+			}
+		},100);
 	}else{		
 		var objectString = "";
 		objectString += '<object classid="clsid:d27cdb6e-ae6d-11cf-96b8-444553540000" width="300" height="300" id="audioEngineFlashPlayer">'
@@ -97,14 +105,24 @@ AudioEngine.prototype._F2JS_messageToJavaScript = function(str){
 	console.log(str);
 };
 AudioEngine.prototype._F2JS_isReady = function(){
-	var self = this;
-	setTimeout(function(){
-		if(self.onReady != undefined){
-			self.onReady();
-		}
-	},100);
+	
+	console.log("_F2JS_isReady");
+	this._isJavaScriptReady = true;
+	
+	this._FInterface_checkBothAreReady();
 	return true;
 };
+
+AudioEngine.prototype._FInterface_checkBothAreReady = function(){
+	if(this._isJavaScriptReady === true && this._isFlashReady === true){
+		var self = this;
+		setTimeout(function(){
+			if(self._onReady != undefined){
+				self._onReady.apply(self);
+			}
+		},100);
+	}
+}
 
 AudioEngine.prototype._FInterface_checkFlashIsReady = function(){
 	var result = false;
@@ -112,17 +130,19 @@ AudioEngine.prototype._FInterface_checkFlashIsReady = function(){
 		if (navigator.appName.indexOf("Microsoft") != -1) {
 			 this._flashElement = window["audioEngineFlashPlayer"];
 		 } else {
-			 this._flashElement = document["audioEngineFlashPlayer"];
+			 this._flashElement = document.getElementsByName("audioEngineFlashPlayer")[0];
 		 }
 		result = this._flashElement._JS2F_isFlashReady();
-	}catch(e){}
+	}catch(e){
+		console.log("_FInterface_checkFlashIsReady Can't connect to Flash");	
+	}
 	if(result === true){
 		clearInterval(this._flashReadyInterval);	
 		this._isFlashReady = true;
-		console.log("_F2JS_checkFlashIsReady:"+this._isFlashReady);	
-	}else{
-		console.log("_F2JS_checkFlashIsReady:"+this._isFlashReady);	
+		
+		this._FInterface_checkBothAreReady();
 	}
+	console.log("_F2JS_checkFlashIsReady:"+this._isFlashReady);	
 }
 
 AudioEngine.prototype._FInterface_preload = function(preloadObjects){
@@ -130,18 +150,24 @@ AudioEngine.prototype._FInterface_preload = function(preloadObjects){
 };
 
 AudioEngine.prototype._FInterface_create = function(label,autoDestroy,autoRewind,autoStop){
+	if(autoDestroy == undefined)autoDestroy = true;
+	if(autoRewind == undefined)autoStop = false;
+	if(autoStop == undefined)autoDestroy = true;
 	return this._flashElement._JS2F_create(label,autoDestroy,autoRewind,autoStop);
 };
 
 AudioEngine.prototype._FInterface_play = function(label,id){
+	if(id === undefined) id = -1;
 	this._flashElement._JS2F_play(label,id);
 };
 
 AudioEngine.prototype._FInterface_pause = function(label,id){
+	if(id === undefined) id = -1;
 	this._flashElement._JS2F_pause(label,id);
 };
 
 AudioEngine.prototype._FInterface_stop = function(label,id){
+	if(id === undefined) id = -1;
 	this._flashElement._JS2F_stop(label,id);
 };
 
