@@ -1,5 +1,5 @@
-<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
-<html xmlns="http://www.w3.org/1999/xhtml">
+<!DOCTYPE html>
+<html>
 <head>
 <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
 <title>Untitled Document</title>
@@ -53,12 +53,9 @@
 <script src="js/Utilities.js" type="text/javascript"></script>
 <script src="js/lib/jquery-1.4.4.min.js" type="text/javascript"></script>
 <script>
-function sendToFlash(){
-	alert('aosjd');
-};
 window.onload = function(){
 	
-	var preloadArray = [{
+	var preloadList = [{
 		label:"music",	
 		mp3:"sounds/howdo.mp3",
 		ogv:"sounds/howdo.ogv"
@@ -86,52 +83,42 @@ window.onload = function(){
 		element:document.getElementById("audioEngineContainer"),
 		swf:'flash/AudioEngineFlashPlayer.swf',
 		namespace:"window.APP.audioEngine",
-		onReady:function(){
-			this.preload(preloadArray);
-		},
+		preloadList:preloadList,
 		onPreloadComplete:function(){
-			
+			$("input").bind('click',function(){
+				var label = $(this).attr('data');
+				var action = this.value;
+				switch(action){
+					case "Create":
+						var autoDestroy = false;
+						var autoRewind = true;
+						var autoStop = false;
+						audioEngine.create(label,autoDestroy,autoRewind,autoStop);
+						break;
+					case "Play":
+						audioEngine.play(label);
+						break;
+					case "Pause":
+						audioEngine.pause(label);
+						break;
+					case "Stop":
+						audioEngine.stop(label);
+						break;
+					case "Stop All":
+						audioEngine.stopAll();
+						break;
+				}
+			});
+			$("#volume").bind('change',function(){
+				console.log("change to:"+this.value);
+				audioEngine.setVolume(this.value);
+			});
 		}
 	});
-	
-	
 	
 	
 	window.APP = window.APP || {};
 	window.APP.audioEngine = audioEngine;
-	
-	
-	$("input").bind('click',function(){
-		var label = $(this).attr('data');
-		var action = this.value;
-		switch(action){
-			case "Create":
-				var autoDestroy = false;
-				var autoRewind = true;
-				var autoStop = false;
-				audioEngine.create(label,autoDestroy,autoRewind,autoStop);
-				break;
-			case "Play":
-				audioEngine.play(label);
-				break;
-			case "Pause":
-				audioEngine.pause(label);
-				break;
-			case "Stop":
-				audioEngine.stop(label);
-				break;
-			case "Stop All":
-				audioEngine.stopAll();
-				break;
-		}
-	});
-	
-	$("#volume").bind('change',function(){
-		
-		console.log("change to:"+this.value);
-		audioEngine.setVolume(this.value);
-	});
-	
 };
 </script>
 </body>
