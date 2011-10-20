@@ -9,31 +9,6 @@
 </head>
 
 <body>
-<p>Music
-<input data="music" type="button" value="Create" />
-<input data="music" type="button" value="Play" />
-<input data="music" type="button" value="Pause" />
-<input data="music" type="button" value="Stop" />
-</p>
-<p>Angry
-<input data="angry" type="button" value="Create" />
-<input data="angry" type="button" value="Play" />
-<input data="angry" type="button" value="Pause" />
-<input data="angry" type="button" value="Stop" />
-</p>
-<p>Ambient
-<input data="ambient" type="button" value="Create" />
-<input data="ambient" type="button" value="Play" />
-<input data="ambient" type="button" value="Pause" />
-<input data="ambient" type="button" value="Stop" />
-</p>
-<p>Warp
-<input data="warp" type="button" value="Create" />
-<input data="warp" type="button" value="Play" />
-<input data="warp" type="button" value="Pause" />
-<input data="warp" type="button" value="Stop" />
-</p>
-<input data="" type="button" value="Stop All" />
 <p>Volume
 <select id="volume" data="volume">
 	<option value="0">0</option>
@@ -43,6 +18,29 @@
     <option value="1" selected="selected">1</option>
 </select>
 </p>
+
+Audio Label
+<select id="audio" data="audio">
+	<option value="music">Music</option>
+    <option value="angry">Angry</option>
+    <option value="ambient">Ambient</option>
+    <option value="warp" selected="selected">Warp</option>
+</select>
+<br>
+<input id="create" type="button" value="Create">
+Auto Destroy<input id="autoDestroy" type="checkbox" name="autoDestroy" value="true" checked="checked" />
+Auto Rewind<input id="autoRewind" type="checkbox" name="autoRewind" value="true"  />
+Auto Stop<input id="autoStop" type="checkbox" name="autoStop" value="true" checked="checked"  />
+<br>
+<input id="play" type="button" value="Play">
+<br>
+<input id="pause" type="button" value="Pause">
+<br>
+<input id="stop" type="button" value="Stop">
+<br>
+<input id="stopAll" type="button" value="StopAll">
+
+
 
 
 <div id="audioEngineContainer"></div>
@@ -85,29 +83,27 @@ window.onload = function(){
 		namespace:"window.APP.audioEngine",
 		preloadList:preloadList,
 		onPreloadComplete:function(){
-			$("input").bind('click',function(){
-				var label = $(this).attr('data');
-				var action = this.value;
-				switch(action){
-					case "Create":
-						var autoDestroy = false;
-						var autoRewind = true;
-						var autoStop = false;
-						audioEngine.create(label,autoDestroy,autoRewind,autoStop);
-						break;
-					case "Play":
-						audioEngine.play(label);
-						break;
-					case "Pause":
-						audioEngine.pause(label);
-						break;
-					case "Stop":
-						audioEngine.stop(label);
-						break;
-					case "Stop All":
-						audioEngine.stopAll();
-						break;
-				}
+			$("#create").bind('click',function(){
+				var label = document.getElementById("audio").value;
+				var autoDestroy = document.getElementById("autoDestroy").checked;
+				var autoRewind = document.getElementById("autoRewind").checked;
+				var autoStop = document.getElementById("autoStop").checked;
+				audioEngine.create(label,autoDestroy,autoRewind,autoStop);
+			});
+			$("#play").bind('click',function(){
+				var label = document.getElementById("audio").value;
+				audioEngine.play(label);
+			});
+			$("#pause").bind('click',function(){
+				var label = document.getElementById("audio").value;
+				audioEngine.pause(label);
+			});
+			$("#stop").bind('click',function(){
+				var label = document.getElementById("audio").value;
+				audioEngine.stop(label);
+			});
+			$("#stopAll").bind('click',function(){
+				audioEngine.stopAll();
 			});
 			$("#volume").bind('change',function(){
 				console.log("change to:"+this.value);
