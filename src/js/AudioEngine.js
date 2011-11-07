@@ -20,6 +20,8 @@ var AudioEngine = function(options){
 	this._instancesArray = [];
 	this._instanceIncrement = 0;
 	this._volume = 1;
+	this._isToggleVolumeOn = true;
+	this._savedPreToggleVolume = 1;
 	
 	this._init();
 };
@@ -472,3 +474,18 @@ AudioEngine.prototype.setVolume = function(volume){
 	}
 }
 
+/**
+* Toggle volume
+* @public 
+*/
+AudioEngine.prototype.toggleVolume = function(){
+	if(this._isToggleVolumeOn === true){
+		this._savedPreToggleVolume = this._volume;
+		this.setVolume(0)
+		this._isToggleVolumeOn = false;
+	}else{
+		this.setVolume(this._savedPreToggleVolume);
+		this._isToggleVolumeOn = true;
+	}
+	return this._isToggleVolumeOn;
+}
